@@ -67,7 +67,7 @@ def getting_important_info():
 
     # print(aapl.history(period='max',interval='1wk'))
     # To get singuler columns
-    print(aapl.history(period='max',interval='1wk')['High'])
+    print(aapl.history(period='max',interval='1wk'))
 
 
 
@@ -92,10 +92,9 @@ def getting_calls():
 # Puts are pretty much the same
 def getting_puts():
     aapl=yf.Ticker('AAPL')
-    opt=aapl.option_chain('2025-11-14')
+    opt=aapl.option_chain()
     print(opt.puts)
 
 
 
-
-
+getting_calls()

@@ -24,6 +24,7 @@ Under the assumptions, no arbitrage, log normal prices etc
 import numpy as np
 import yfinance as yf
 import math
+from datetime import datetime
 
 def cumulative_dist(d_):
     """ Cumulative dist function for a standard normal distribution, 
@@ -42,34 +43,49 @@ def call_black_scholes(S,K,T,sigma,r):
 
 
 
+# def get_sigma_call(contract_symbol):
+#     aapl = yf.Ticker(contract_symbol.split('2')[0])
+#     options_dates_list = aapl.options
+
+#     # Getting the most recent option date 
+#     recent_option_date = options_dates_list[0]
+#     opt_chain = aapl.option_chain(recent_option_date)
+
+#     # Options chain has call and put atrabutes which are both pandas dataframes
+#     calls_df = opt_chain.calls
+#     return calls_df['impliedVolatility'][0]
+
+# def get_sigma_put(contract_symbol):
+#     aapl = yf.Ticker(contract_symbol.split('2')[0])
+#     options_dates_list = aapl.options
+
+#     # Getting the most recent option date 
+#     recent_option_date = options_dates_list[0]
+#     opt_chain = aapl.option_chain(recent_option_date)
+
+#     # Options chain has call and put atrabutes which are both pandas dataframes
+#     puts_df = opt_chain.puts
+#     return puts_df['impliedVolatility'][0]
 
 
-# Getting sigma this way is incorrect, as sigma should represent the average future volitlity, so historical data can be used to estimate it 
-def get_sigma_call(tickercode):
-    aapl = yf.Ticker(tickercode)
-    options_dates_list = aapl.options
+def get_sigma(contract_symbol):
+    # Come back to the function as still trust data too much
+    ticker = contract_symbol.split('2')[0]
+    expiry =f"20{contract_symbol[4:6]}-{contract_symbol[6:8]}-{contract_symbol[8:10]}"
+    strike=float(contract_symbol[-8:]) / 1000
+    cp = 'calls' if 'C' in contract_symbol else 'puts'
 
-    # Getting the most recent option date 
-    recent_option_date = options_dates_list[0]
-    opt_chain = aapl.option_chain(recent_option_date)
+    chain = yf.Ticker(ticker).option_chain(expiry)
+    df = chain.calls if cp == 'calls' else chain.puts
 
-    # Options chain has call and put atrabutes which are both pandas dataframes
-    calls_df = opt_chain.calls
-    return calls_df['impliedVolatility'][0]
-
-
-
-def get_sigma_put(tickercode):
-    aapl = yf.Ticker(tickercode)
-    options_dates_list = aapl.options
-
-    # Getting the most recent option date 
-    recent_option_date = options_dates_list[0]
-    opt_chain = aapl.option_chain(recent_option_date)
-
-    # Options chain has call and put atrabutes which are both pandas dataframes
-    puts_df = opt_chain.puts
-    return puts_df['impliedVolatility'][0]
+    matches = df[df['strike'] == strike]
+    if len(matches) == 1:
+        iv = matches['impliedVolatility'].iloc[0]
+        if iv == 0.500005:
+            raise ValueError("Invalid IV")
+        return iv
+    else:
+        raise ValueError("Either not matchs found or multiple matchs found.")
 
 
 def get_r():
@@ -84,19 +100,47 @@ def get_r():
     return bond_data['Close'].iloc[-1]/100
 
 
-def get_s(ticker_code):
+
+def get_s(contract_symbol):
     """ Getting the current stock price """
-    given_stock = yf.Ticker(ticker_code)
+    given_stock = yf.Ticker(contract_symbol.split('2')[0])
     return given_stock.info['currentPrice']
 
 
 
-x = get_sigma_call("AAPL")
-y = get_sigma_put("AAPL")
-z = get_r()
+def get_k(contract_symbol):
+    """ Getting strike price for the given option, C or P displayed in the contract symbol, 
+    denoting whether a call or put """
+    if 'C' in contract_symbol:
+        strike_string = contract_symbol.split('C')
+        strike_string = strike_string[-1]
+    elif 'P' in contract_symbol:
+        strike_string = contract_symbol.split('P')
+        strike_string = strike_string[-1]
+    else:
+        return "Invalid contract symbol given."
+    try:
+        # Padded with 00 on each side
+        strike_price = float(strike_string)/1000
+        return strike_price
+    except ValueError:
+        return "Could not convert contract symbol into interger."
 
-print(f"Sigma for call: {x}")
-print(f"Sigma for put: {y}")
-print(f"Risk free rate, {z}")
-print(f"Current price, {get_s('AAPL')}")
-# price = call_black_scholes(S=100, K=105, T=1, r=0.05, sigma=0.2)
+
+def get_T(contract_symbol):
+    expiry_str = contract_symbol[4:10]
+    expiry = datetime(2000+int(expiry_str[:2]),int(expiry_str[2:4]),int(expiry_str[4:6]))
+    today = datetime.today()
+    T = (expiry - today).days / 365.25
+    if T <=0:
+        raise ValueError('Option expired')
+    return T
+
+
+contract_symbol = 'AAPL251114C00400000' # Working
+contract_symbol = 'AAPL251114C00110000' # Not working
+
+c = call_black_scholes(S=get_s(contract_symbol), K=get_k(contract_symbol), T=get_T(contract_symbol), r=get_r(), sigma=get_sigma(contract_symbol))
+print(round(c,4))
+
+# print(get_sigma(contract_symbol))
