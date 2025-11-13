@@ -19,12 +19,15 @@ sigma = volatility of a single assests price
 r = risk free interest rate
 
 Under the assumptions, no arbitrage, log normal prices etc
+
+Future improvments, ensure better error & edge case handling, adapt project with streamlit.
 """
 
 import numpy as np
 import yfinance as yf
 import math
 from datetime import datetime
+
 
 def cumulative_dist(d_):
     """ Cumulative dist function for a standard normal distribution, 
@@ -40,32 +43,6 @@ def call_black_scholes(S,K,T,sigma,r):
 
     return c
 
-
-
-
-# def get_sigma_call(contract_symbol):
-#     aapl = yf.Ticker(contract_symbol.split('2')[0])
-#     options_dates_list = aapl.options
-
-#     # Getting the most recent option date 
-#     recent_option_date = options_dates_list[0]
-#     opt_chain = aapl.option_chain(recent_option_date)
-
-#     # Options chain has call and put atrabutes which are both pandas dataframes
-#     calls_df = opt_chain.calls
-#     return calls_df['impliedVolatility'][0]
-
-# def get_sigma_put(contract_symbol):
-#     aapl = yf.Ticker(contract_symbol.split('2')[0])
-#     options_dates_list = aapl.options
-
-#     # Getting the most recent option date 
-#     recent_option_date = options_dates_list[0]
-#     opt_chain = aapl.option_chain(recent_option_date)
-
-#     # Options chain has call and put atrabutes which are both pandas dataframes
-#     puts_df = opt_chain.puts
-#     return puts_df['impliedVolatility'][0]
 
 
 def get_sigma(contract_symbol):
@@ -137,10 +114,8 @@ def get_T(contract_symbol):
     return T
 
 
-contract_symbol = 'AAPL251114C00400000' # Working
-contract_symbol = 'AAPL251114C00110000' # Not working
+contract_symbol = 'AAPL251121C00115000' # Ensure option valid.
 
 c = call_black_scholes(S=get_s(contract_symbol), K=get_k(contract_symbol), T=get_T(contract_symbol), r=get_r(), sigma=get_sigma(contract_symbol))
 print(round(c,4))
 
-# print(get_sigma(contract_symbol))

@@ -92,9 +92,11 @@ def getting_calls():
 # Puts are pretty much the same
 def getting_puts():
     aapl=yf.Ticker('AAPL')
-    opt=aapl.option_chain()
-    print(opt.puts)
+    # opt=aapl.option_chain()
+    # print(opt.puts)
+    print(aapl.option_chain(date='2025-11-21'))
+    
 
 
 
-getting_calls()
+getting_puts()
