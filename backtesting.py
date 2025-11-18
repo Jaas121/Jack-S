@@ -1,10 +1,15 @@
+"""
+Date: 16/11/25
+Author: Jack Slaughter
+
+Program compares portfolio statergy of holding or DMAC (Dual moving average crossover) with given stock(s).
+DMAC is a good trend filter but slowing and more lagging than some of the other strategies.
+"""
+
 import vectorbt as vbt
-import yfinance as yf
-import pandas as pd
-from datetime import datetime
 import matplotlib.pyplot as plt
 
-start = '2024-11-16'
+start = '2020-11-16'
 end = '2025-11-16'
 
 def pf_strategy_values(ticker):
@@ -21,7 +26,6 @@ def pf_strategy_values(ticker):
     # Exit signal, when the 20 day MA crosses back above the 10 day MA -> bearish sign
     exits = slow_ma.ma_crossed_above(fast_ma)
 
-
     # Backtesting with portfolio
     pf = vbt.Portfolio.from_signals(
         aapl_price,
@@ -31,7 +35,7 @@ def pf_strategy_values(ticker):
         fees=0.001,
         slippage=0.0005,
         direction='longonly')
-    print(f"Total return for statergy: {pf.total_return()}")  
+    print(f"Total return for DMAC statergy on {ticker}: {pf.total_return()}")  
 
     # Note for getting trades made
     trades = pf.trades.records_readable
@@ -39,27 +43,36 @@ def pf_strategy_values(ticker):
     return pf.value()
 
 
-def sandp_values():
-    # Getting S&P500 (SPY) to compare to backtester
-    price_spy = vbt.YFData.download('SPY',start=start,end=end,interval='1d').get('Close')
 
-    pf_sandp = vbt.Portfolio.from_holding(
-        price_spy,
+def pf_holding_values(ticker):
+    # Getting holing to compare to backtester
+    price_hold = vbt.YFData.download(ticker,start=start,end=end,interval='1d').get('Close')
+
+    pf_hold = vbt.Portfolio.from_holding(
+        price_hold,
         init_cash=10_000,
     )
 
-    return pf_sandp.value()
+    print(f"Total return for holding {ticker}: {pf_hold.total_return()}")  
+    return pf_hold.value()
 
 
+def main():
+    tickers_strategy=['AAPL']
+    tickers_holding=['AAPL']
 
-ticker='AAPL'
+    # Plotting curves
+    for ticker in tickers_strategy:
+        plt.plot(pf_strategy_values(ticker),label=f'{ticker} strategy')
 
-# Plotting curves
-plt.plot(pf_strategy_values(ticker))
-plt.plot(sandp_values())
-plt.title(f"Investment in SPY (orange) vs DMAC with {ticker} (blue)")
-plt.ylabel('$$$$$')
-plt.xlabel('Time')
-plt.show()
+    for ticker in tickers_holding:
+        plt.plot(pf_holding_values(ticker),label=f'{ticker} holding')
 
+    plt.title(f"Backtesting investments over 5 year period")
+    plt.legend()
+    plt.ylabel('$$$$$')
+    plt.xlabel('Year')
+    plt.show()
+    
+main()
 
