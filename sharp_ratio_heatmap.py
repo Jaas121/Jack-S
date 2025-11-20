@@ -2,12 +2,12 @@
 Date: 18/11/25
 Author: Jack Slaughter
 
-Program will show the sharp ratio as a heatmap comparing proportans of 2 stocks making up a portfolio 
+Program will show the sharpe ratio as a heatmap comparing proportans of 2 stocks making up a portfolio 
 
 We're using proportans of 2 stocks making up a portfolio, so will use proportan as x axes and y the lookback period (incrementing by 30 days)
 It's important to note what having the lookback period on the y axes tells us.......
 
-sharp ratio = (expected return - risk free rate) / volitlity of portfolio
+sharpe ratio = (expected return - risk free rate) / volitlity of portfolio
 
 """
 
@@ -19,7 +19,8 @@ from datetime import datetime,timedelta
 # 10 rows and 10 columns of random data
 # data = np.random.rand(10,10)
 
-
+ticker1 = 'AAPL'
+ticker2 = 'MSFT'
 
 
 
@@ -58,34 +59,53 @@ def std_deviation(ticker,lookback):
 
 
 
+def get_sharp_matrix():
+    """ Function gets the matrix data for the sharp ratio heatmap, matrix represented by arrays in an array """
+    matrix = np.zeros((10,10))
+
+    LOOKBACK_STEP = 30
+    WEIGHT_STEPS = 10
+
+    # rf constant
+    rf = risk_free_rate().iloc[0]
+
+    for lb in range(1,11):
+        lookback = lb * LOOKBACK_STEP
+        # Getting information or either stock
+        exp1 = expected_return(ticker1,lookback).iloc[0]
+        std1 = std_deviation(ticker1,lookback)
+        exp2 = expected_return(ticker2,lookback).iloc[0]
+        std2 = std_deviation(ticker2,lookback)
+
+        # Fill out rows, so need to factor in proporton
+        for w in range(1,11):
+            weight1 = w / WEIGHT_STEPS
+            weight2 = 1 - weight1
+
+            portfolio_return = exp1*weight1 + exp2*weight2
+            portfolio_std = std1*weight1 + std2*weight2
+
+            sharp = (portfolio_return - rf) / portfolio_std
+
+            matrix[lb-1,w-1] = sharp
+    return matrix
 
 
+def main():
+    data = get_sharp_matrix()
+
+    # imshow displays the greyscale image
+    plt.imshow(data,cmap='jet',origin='lower',aspect='auto')
+    plt.colorbar(label='Sharpe Ratio')
+    plt.title(f'Sharpe Ratio Heatmap - {ticker1} vs {ticker2}')
+
+    plt.xlabel(f"Weight of {ticker1} in portfolio")
+    plt.xticks(ticks=range(10),labels=['10%','20%','30%','40%','50%','60%','70%','80%','90%','100%'])
+
+    plt.ylabel("Lookback period")
+    plt.yticks(ticks=range(10),labels=['30 days','60 days','90 days','120 days','150 days','180 days','210 days','240 days','270 days','300 days'])
+
+    plt.show()
 
 
-# # How to put into 10x10 grid
-
-
-ticker = 'AAPL'
-
-
-# Lookback incremented by 30 days
-array=np.array([])
-LOOKBACK = 30
-
-# rf constant
-rf = risk_free_rate().iloc[0]
-# 
-for i in range(1,11):
-    expected = expected_return(ticker,LOOKBACK*i).iloc[0]
-    std_dev = std_deviation(ticker,LOOKBACK*i)
-    sharp = (expected-rf)/std_dev
-
-    array = np.append(array,sharp)
-
-print(array)
-
-
-# # imshow displays the greyscale image
-# plt.imshow(data,cmap='hot',origin='lower',aspect='auto')
-# plt.colorbar(label='Intensity')
-# plt.show()
+main()
