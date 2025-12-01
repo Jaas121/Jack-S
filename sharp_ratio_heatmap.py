@@ -16,8 +16,18 @@ import numpy as np
 import yfinance as yf
 from datetime import datetime,timedelta
 import pandas as pd
+import time
 
-
+def run_time(func)->int:
+    """ decorator showing runtime of function """
+    def wrapper(*args,**kwargs):
+        start = time.time()
+        # Pass rguments to the decorated function and store its result
+        results = func(*args,**kwargs)
+        end = time.time()
+        print(f"{func.__name__} ran in {end - start:.2f} seconds.")
+        return results
+    return wrapper
 
 ticker1 = 'AAPL'
 ticker2 = 'MSFT'
@@ -33,7 +43,7 @@ def get_daily_returns(ticker,lookback):
     return price_data['Close'].pct_change().dropna()
 
 
-def expected_return(ticker,lookback):
+def expected_return(ticker,lookback)->int:
     """ Yfinance does not have an expected return function, so we will find the mean of past returns, over the last 2 years """
     daily_returns = get_daily_returns(ticker,lookback)
     ave_annual_returns = daily_returns.mean()*252
@@ -50,7 +60,7 @@ def risk_free_rate():
 
 
 
-def std_deviation(ticker,lookback):
+def std_deviation(ticker,lookback)->int:
     """ Getting std deviation which represents the volitilty of the portfolio"""
     end = datetime.today()
     start = end - timedelta(lookback)
@@ -107,7 +117,7 @@ def get_sharp_matrix():
             matrix[lb-1,w-1] = sharp
     return matrix
 
-
+@run_time
 def main():
     data = get_sharp_matrix()
 
@@ -123,6 +133,5 @@ def main():
     plt.yticks(ticks=range(10),labels=['30 days','60 days','90 days','120 days','150 days','180 days','210 days','240 days','270 days','300 days'])
 
     plt.show()
-
 
 main()
